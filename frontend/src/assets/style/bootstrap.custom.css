@@ -1090,6 +1090,22 @@ progress {
   flex: 0 0 auto;
   width: 25%;
 }
+.tracked-item-wrapper {
+  position: relative;
+}
+
+.track-delete-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 50;         /* 🔥 keeps button above the card */
+  opacity: 0;          /* hidden normally */
+  transition: opacity 0.15s ease;
+}
+
+.tracked-item-wrapper:hover .track-delete-btn {
+  opacity: 1;          /* 🔥 appears on hover */
+}
 
 .row-cols-5 > * {
   flex: 0 0 auto;

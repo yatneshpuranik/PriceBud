@@ -14,8 +14,7 @@ import connectDb from "./config/db.js";
 import productRoute from "./routes/productRoute.js";
 import userRoute from "./routes/userRoute.js";          
 import trackedRoute from "./routes/trackedRoute.js";
-import alertRoute from "./routes/alertRoute.js";
-
+import alertRoutes from "./routes/alertRoute.js";
 
 
 
@@ -42,7 +41,7 @@ app.get("/", (req, res) => {
 app.use("/api/products", productRoute);
 app.use("/api/users", userRoute);
 app.use("/api/tracked", trackedRoute);
-app.use("/api/alerts", alertRoute);
+app.use("/api/alerts", alertRoutes); 
 
 
 app.use(notFound);

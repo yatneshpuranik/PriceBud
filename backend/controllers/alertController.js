@@ -1,70 +1,103 @@
 import asyncHandler from "../middleware/asyncHandler.js";
-import User from "../models/userModel.js";
+import Tracked from "../models/trackedModel.js";
 import Product from "../models/productModel.js";
+import Alert from "../models/alertModel.js";
 
-// -----------------------------------------------------
-// @desc    Add Alert for a product
-// @route   POST /api/alerts
-// @access  Private
-// -----------------------------------------------------
-export const addAlert = asyncHandler(async (req, res) => {
-  const { productId, targetPrice } = req.body;
+const DROP_THRESHOLD = 0.2; // 20%
 
-  if (!productId || !targetPrice) {
-    return res.status(400).json({ message: "Product ID & target price required" });
-  }
+// Helper: compute best price + max historical price
+function computeDropData(product) {
+  if (!product.platforms || product.platforms.length === 0) return null;
 
-  const user = await User.findById(req.user._id);
+  let currentBest = Infinity;
+  let maxHistorical = 0;
 
-  // Check if product exists
-  const product = await Product.findById(productId);
-  if (!product) return res.status(404).json({ message: "Product not found" });
+  product.platforms.forEach((p) => {
+    if (typeof p.currentPrice === "number") {
+      currentBest = Math.min(currentBest, p.currentPrice);
+    }
 
-  // Check duplicate alert
-  const exists = user.alerts.find(
-    (a) => a.product.toString() === productId.toString()
-  );
-
-  if (exists)
-    return res.status(400).json({ message: "Alert already exists for this product" });
-
-  user.alerts.push({
-    product: productId,
-    targetPrice,
+    (p.history || []).forEach((h) => {
+      if (typeof h.price === "number") {
+        if (h.price > maxHistorical) maxHistorical = h.price;
+      }
+    });
   });
 
-  await user.save();
+  if (!isFinite(currentBest) || maxHistorical <= 0) return null;
 
-  res.status(201).json({ message: "Alert added successfully", alerts: user.alerts });
-});
+  const dropPercent = ((maxHistorical - currentBest) / maxHistorical) * 100;
 
-// -----------------------------------------------------
-// @desc    Get all alerts of logged-in user
-// @route   GET /api/alerts
-// @access  Private
-// -----------------------------------------------------
+  return {
+    currentBest,
+    maxHistorical,
+    dropPercent,
+  };
+}
+
+// 🔁 Auto-refresh alerts for this user based on tracked products
+async function refreshAlertsForUser(userId) {
+  const trackedItems = await Tracked.find({ user: userId }).populate("product");
+
+  for (const t of trackedItems) {
+    const product = t.product;
+    if (!product) continue;
+
+    const info = computeDropData(product);
+    if (!info) continue;
+
+    const { currentBest, maxHistorical, dropPercent } = info;
+
+    if (dropPercent >= DROP_THRESHOLD * 100) {
+      const message = `Price dropped ${dropPercent.toFixed(
+        1
+      )}% from ${maxHistorical.toFixed(0)} to ${currentBest.toFixed(0)}.`;
+
+      await Alert.findOneAndUpdate(
+        { user: userId, product: product._id },
+        {
+          user: userId,
+          product: product._id,
+          dropPercent,
+          currentPrice: currentBest,
+          previousHigh: maxHistorical,
+          message,
+          seen: false, // new drop -> mark unread
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    } else {
+      // Optional: if price recovered, you can delete old alert
+      // await Alert.deleteOne({ user: userId, product: product._id });
+    }
+  }
+}
+
+// GET /api/alerts  → list alerts + mark as seen
 export const getAlerts = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id)
-    .populate("alerts.product");
+  await refreshAlertsForUser(req.user._id);
 
-  res.json(user.alerts);
-});
+  const alerts = await Alert.find({ user: req.user._id })
+    .populate("product")
+    .sort({ createdAt: -1 });
 
-// -----------------------------------------------------
-// @desc    Delete a specific alert
-// @route   DELETE /api/alerts/:alertId
-// @access  Private
-// -----------------------------------------------------
-export const deleteAlert = asyncHandler(async (req, res) => {
-  const { alertId } = req.params;
-
-  const user = await User.findById(req.user._id);
-
-  user.alerts = user.alerts.filter(
-    (alert) => alert._id.toString() !== alertId
+  // User ne alerts screen open ki → mark all seen
+  await Alert.updateMany(
+    { user: req.user._id, seen: false },
+    { $set: { seen: true } }
   );
 
-  await user.save();
+  res.json(alerts);
+});
 
-  res.json({ message: "Alert removed", alerts: user.alerts });
+// GET /api/alerts/unread-count → sirf count for bell icon
+export const getUnreadAlertCount = asyncHandler(async (req, res) => {
+  await refreshAlertsForUser(req.user._id);
+
+  const count = await Alert.countDocuments({
+    user: req.user._id,
+    seen: false,
+  });
+
+  res.json({ count });
 });

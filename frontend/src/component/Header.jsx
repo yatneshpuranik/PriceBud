@@ -1,5 +1,5 @@
 import { Navbar, Nav, NavDropdown, Container, Form } from "react-bootstrap";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   FaHome,
   FaStar,
@@ -9,14 +9,18 @@ import {
   FaSearch,
 } from "react-icons/fa";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useLogoutMutation } from "../slices/userApiSlice";
 import { logout } from "../slices/authSlice";
+import axios from "axios";
 
 const Header = () => {
   const [search, setSearch] = useState("");
+  const [unreadAlerts, setUnreadAlerts] = useState(0);
+
   const navigate = useNavigate();
+  const location = useLocation();
 
   const dispatch = useDispatch();
   const { userInfo } = useSelector((state) => state.auth);
@@ -32,11 +36,39 @@ const Header = () => {
     try {
       await LogoutApiCall().unwrap();
       dispatch(logout());
+      setUnreadAlerts(0);
       navigate("/login");
     } catch (err) {
       console.log(err);
     }
   };
+
+  // 🔴 Fetch unread alert count on app load + when user changes
+  useEffect(() => {
+    const fetchUnread = async () => {
+      if (!userInfo) {
+        setUnreadAlerts(0);
+        return;
+      }
+      try {
+        const { data } = await axios.get("/api/alerts/unread-count", {
+          withCredentials: true,
+        });
+        setUnreadAlerts(data.count || 0);
+      } catch (err) {
+        console.log("Alert count error:", err);
+      }
+    };
+
+    fetchUnread();
+  }, [userInfo]);
+
+  // Agar user alerts page open kare → header me count reset kar de
+  useEffect(() => {
+    if (location.pathname === "/alerts") {
+      setUnreadAlerts(0);
+    }
+  }, [location.pathname]);
 
   return (
     <header>
@@ -50,8 +82,7 @@ const Header = () => {
         }}
       >
         <Container>
-
-          {/* ⭐ BRAND LOGO – Minimal + Micro Animation */}
+          {/* BRAND */}
           <Navbar.Brand
             as={Link}
             to="/"
@@ -80,56 +111,75 @@ const Header = () => {
           <Navbar.Toggle />
 
           <Navbar.Collapse>
-
             {/* LEFT NAV LINKS */}
             <Nav className="me-auto align-items-center">
+              {/* Home */}
+              <Nav.Link
+                as={Link}
+                to="/"
+                className="text-dark px-3"
+                style={{ fontWeight: 500 }}
+              >
+                <FaHome className="me-1" /> Home
+              </Nav.Link>
 
-              {[
-                { to: "/", icon: <FaHome />, label: "Home" },
-                { to: "/tracked", icon: <FaStar />, label: "Tracked" },
-                { to: "/alerts", icon: <FaBell />, label: "Alerts" },
-                { to: "/info#about", icon: <FaInfoCircle />, label: "About" },
-              ].map((item, index) => (
-                <Nav.Link
-                  key={index}
-                  as={Link}
-                  to={item.to}
-                  className="text-dark px-3"
-                  style={{
-                    fontWeight: 500,
-                    position: "relative",
-                  }}
-                >
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                    }}
-                  >
-                    {item.icon} {item.label}
-                  </span>
+              {/* Tracked */}
+              <Nav.Link
+                as={Link}
+                to="/tracked"
+                className="text-dark px-3"
+                style={{ fontWeight: 500 }}
+              >
+                <FaStar className="me-1" /> Tracked
+              </Nav.Link>
 
-                  {/* Underline Animation */}
-                  <span
-                    className="nav-underline"
-                    style={{
-                      content: "",
-                      position: "absolute",
-                      bottom: -2,
-                      left: 15,
-                      width: 0,
-                      height: "2px",
-                      background: "#0070f3",
-                      transition: "0.3s ease",
-                    }}
-                  ></span>
-                </Nav.Link>
-              ))}
+              {/* Alerts with dot */}
+              <Nav.Link
+                as={Link}
+                to="/alerts"
+                className="text-dark px-3"
+                style={{ fontWeight: 500, position: "relative" }}
+              >
+                <span style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <FaBell className="me-1" /> Alerts
+                  {unreadAlerts > 0 && (
+                    <span
+                      style={{
+                        minWidth: "18px",
+                        height: "18px",
+                        borderRadius: "999px",
+                        background: "#ef4444",
+                        color: "white",
+                        fontSize: "11px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "0 5px",
+                        marginLeft: "4px",
+                      }}
+                    >
+                      {unreadAlerts > 9 ? "9+" : unreadAlerts}
+                    </span>
+                  )}
+                </span>
+              </Nav.Link>
+
+              {/* About */}
+              <Nav.Link
+                as={Link}
+                to="/info#about"
+                className="text-dark px-3"
+                style={{ fontWeight: 500 }}
+              >
+                <FaInfoCircle className="me-1" /> About
+              </Nav.Link>
             </Nav>
 
-            {/* SEARCH BAR */}
-            <Form onSubmit={handleSearch} className="d-flex ms-md-3 my-2 my-md-0">
+            {/* SEARCH */}
+            <Form
+              onSubmit={handleSearch}
+              className="d-flex ms-md-3 my-2 my-md-0"
+            >
               <div
                 style={{
                   display: "flex",
@@ -157,7 +207,7 @@ const Header = () => {
               </div>
             </Form>
 
-            {/* PROFILE DROPDOWN */}
+            {/* PROFILE */}
             <Nav className="ms-3">
               {userInfo ? (
                 <NavDropdown
@@ -171,13 +221,16 @@ const Header = () => {
                   <NavDropdown.Item as={Link} to="/profile">
                     Profile
                   </NavDropdown.Item>
-
                   <NavDropdown.Item onClick={logoutHandler}>
                     Logout
                   </NavDropdown.Item>
                 </NavDropdown>
               ) : (
-                <Nav.Link as={Link} to="/login" className="text-dark fw-semibold">
+                <Nav.Link
+                  as={Link}
+                  to="/login"
+                  className="text-dark fw-semibold"
+                >
                   <FaUserCircle className="me-1" /> Login
                 </Nav.Link>
               )}
@@ -186,7 +239,6 @@ const Header = () => {
         </Container>
       </Navbar>
 
-      {/* MICRO ANIMATION KEYFRAME */}
       <style>
         {`
           @keyframes pulse {
@@ -194,13 +246,8 @@ const Header = () => {
             50% { transform: scale(1.25); opacity: 1; }
             100% { transform: scale(1); opacity: 0.8; }
           }
-
-          .nav-link:hover .nav-underline {
-            width: 45%;
-          }
         `}
       </style>
-
     </header>
   );
 };

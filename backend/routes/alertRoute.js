@@ -1,14 +1,14 @@
 import express from "express";
-import { addAlert, getAlerts, deleteAlert } from "../controllers/alertController.js";
 import { protect } from "../middleware/authMiddleware.js";
+import {
+  getAlerts,
+  getUnreadAlertCount,
+} from "../controllers/alertController.js";
 
 const router = express.Router();
 
-router.route("/")
-  .post(protect, addAlert)   // Add alert
-  .get(protect, getAlerts);  // Get all alerts
-
-router.route("/:alertId")
-  .delete(protect, deleteAlert); // Delete alert
+// Auto alerts (no manual create)
+router.get("/", protect, getAlerts);
+router.get("/unread-count", protect, getUnreadAlertCount);
 
 export default router;
