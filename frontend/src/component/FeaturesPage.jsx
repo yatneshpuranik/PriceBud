@@ -41,7 +41,7 @@ const FeaturesPage = () => {
             <FaRobot size={45} className="text-danger mb-3" />
             <h5>AI Predictions</h5>
             <p className="text-muted">
-              TensorFlow.js-powered future price predictions (coming soon).
+              TensorFlow.js-powered future price predictions.
             </p>
           </Card>
         </Col>

@@ -15,7 +15,6 @@ const AlertScreen = () => {
       setAlerts(data);
       setLoading(false);
     } catch (err) {
-      console.error(err);
       setError("Failed to load alerts");
       setLoading(false);
     }
@@ -26,76 +25,142 @@ const AlertScreen = () => {
   }, []);
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "16px" }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12 }}>
+    <div
+      style={{
+        maxWidth: 900,
+        margin: "0 auto",
+        padding: "24px",
+      }}
+    >
+      {/* Heading */}
+      <h1
+        style={{
+          fontSize: 30,
+          fontWeight: 700,
+          marginBottom: 8,
+          color: "#111827",
+          letterSpacing: "-0.5px",
+        }}
+      >
         Price Drop Alerts
       </h1>
 
-      <p style={{ color: "#6b7280", fontSize: 14, marginBottom: 16 }}>
-        These alerts are automatically created when a tracked product drops
-        more than <b>20%</b> from its recent high.
+      <p style={{ color: "#6b7280", fontSize: 15, marginBottom: 24 }}>
+        Alerts generate automatically when a product drops more than{" "}
+        <b>20%</b> from its recent high.
       </p>
 
+      {/* Error Notice */}
       {error && (
-        <div style={{ color: "#b91c1c", marginBottom: 12 }}>{error}</div>
+        <div
+          style={{
+            color: "#b91c1c",
+            background: "#fee2e2",
+            padding: "10px 14px",
+            borderRadius: 10,
+            marginBottom: 16,
+            border: "1px solid #fecaca",
+          }}
+        >
+          {error}
+        </div>
       )}
 
+      {/* Loading */}
       {loading ? (
-        <p>Loading alerts…</p>
+        <p style={{ opacity: 0.6 }}>Loading alerts…</p>
       ) : alerts.length === 0 ? (
-        <p style={{ color: "#6b7280" }}>
-          No alerts yet. Track some products and check back when prices drop.
-        </p>
+        <div
+          style={{
+            textAlign: "center",
+            borderRadius: 14,
+            padding: "50px 0",
+            background: "#fafafa",
+            border: "1px dashed #d1d5db",
+            color: "#6b7280",
+          }}
+        >
+          <p style={{ fontSize: 16, margin: 0 }}>
+            No alerts yet — track products to receive notifications.
+          </p>
+        </div>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
           {alerts.map((alert) => (
             <li
               key={alert._id}
               style={{
                 border: "1px solid #e5e7eb",
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 10,
+                borderRadius: 16,
+                background: "#ffffff",
+                padding: "18px 20px",
+                marginBottom: 16,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                background: "#fff",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.03)",
+                transition: "0.25s ease",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-3px)";
+                e.currentTarget.style.boxShadow =
+                  "0 6px 18px rgba(0,0,0,0.08)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow =
+                  "0 2px 8px rgba(0,0,0,0.04)";
               }}
             >
-              <div>
-                <p style={{ fontWeight: 600, marginBottom: 4 }}>
+              {/* LEFT CONTENT */}
+              <div style={{ width: "75%" }}>
+                <p
+                  style={{
+                    fontWeight: 600,
+                    margin: 0,
+                    fontSize: 16,
+                    color: "#1f2937",
+                    marginBottom: 4,
+                  }}
+                >
                   {alert.product?.title || alert.product?.name || "Product"}
                 </p>
-                <p style={{ margin: 0, fontSize: 14 }}>
+
+                <p style={{ margin: 0, fontSize: 14, color: "#374151" }}>
                   <b>Drop:</b> {alert.dropPercent.toFixed(1)}% &nbsp; | &nbsp;
-                  <b>From:</b> {alert.previousHigh.toFixed(0)} &nbsp;→&nbsp;
+                  <b>From:</b> {alert.previousHigh.toFixed(0)} →{" "}
                   <b>Now:</b> {alert.currentPrice.toFixed(0)}
                 </p>
+
                 {alert.createdAt && (
                   <p
                     style={{
                       margin: 0,
-                      marginTop: 4,
+                      marginTop: 6,
                       fontSize: 12,
                       color: "#6b7280",
                     }}
                   >
-                    Detected at:{" "}
-                    {new Date(alert.createdAt).toLocaleString()}
+                    Detected: {new Date(alert.createdAt).toLocaleString()}
                   </p>
                 )}
               </div>
 
+              {/* BADGE */}
               <span
                 style={{
-                  fontSize: 12,
-                  padding: "4px 10px",
-                  borderRadius: 999,
-                  background: "#fee2e2",
-                  color: "#b91c1c",
-                  fontWeight: 500,
+                  background: "#ffe4e6",
+                  color: "#be123c",
+                  padding: "6px 14px",
+                  borderRadius: 20,
+                  fontSize: 13,
+                  fontWeight: 600,
                   whiteSpace: "nowrap",
+                  border: "1px solid #fecdd3",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
                 }}
               >
                 🔻 Big Drop

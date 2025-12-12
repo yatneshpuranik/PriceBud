@@ -1,17 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { Container, Row, Col, Card, ListGroup, Spinner, Form, Button, Alert } from "react-bootstrap";
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Spinner,
+  Form,
+  Button,
+  Alert,
+} from "react-bootstrap";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const ProfileScreen = () => {
   const [user, setUser] = useState(null);
 
-  // Editable fields
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // UI states
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
@@ -27,16 +34,13 @@ const ProfileScreen = () => {
         });
 
         setUser(data);
-        setName(data.name); // load current name in input
+        setName(data.name);
         setLoading(false);
       } catch (err) {
-        console.error(err);
-        setError(err.response?.data?.message || "Failed to fetch user profile");
+        setError(err.response?.data?.message || "Failed to load profile");
         setLoading(false);
 
-        if (err.response?.status === 401) {
-          navigate("/login");
-        }
+        if (err.response?.status === 401) navigate("/login");
       }
     };
 
@@ -54,13 +58,9 @@ const ProfileScreen = () => {
 
     try {
       setUpdating(true);
-
       const { data } = await axios.put(
         "/api/users/profile",
-        {
-          name,
-          password: password || undefined, // send only if not empty
-        },
+        { name, password: password || undefined },
         { withCredentials: true }
       );
 
@@ -82,75 +82,150 @@ const ProfileScreen = () => {
   }
 
   return (
-    <Container className="my-5">
-      <Row className="justify-content-center">
+    <Container className="my-5" style={{ maxWidth: "900px" }}>
+      <Row className="g-4 justify-content-center">
+        
+        {/* USER OVERVIEW */}
         <Col md={6}>
-          <Card className="shadow-sm mb-4">
-            <Card.Header className="bg-dark text-light">
-              <h4>User Profile</h4>
+          <Card
+            className="shadow-lg"
+            style={{
+              borderRadius: "18px",
+              border: "1px solid #ececec",
+              overflow: "hidden",
+            }}
+          >
+            <Card.Header
+              className="text-light"
+              style={{
+                background: "#1e293b",
+                padding: "18px",
+                fontSize: "18px",
+                fontWeight: 600,
+              }}
+            >
+              User Overview
             </Card.Header>
-            <Card.Body>
-              <ListGroup variant="flush">
-                <ListGroup.Item>
-                  <strong>Name:</strong> {user.name}
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  <strong>Email:</strong> {user.email}
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  <strong>Admin:</strong> {user.isAdmin ? "Yes" : "No"}
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  <strong>Tracked Items:</strong> {user.trackedItems?.length || 0}
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  <strong>Alerts:</strong> {user.alerts?.length || 0}
-                </ListGroup.Item>
-              </ListGroup>
+
+            <Card.Body style={{ padding: "20px" }}>
+              <div className="mb-3">
+                <strong>Name:</strong>
+                <div style={{ color: "#374151" }}>{user.name}</div>
+              </div>
+
+              <div className="mb-3">
+                <strong>Email:</strong>
+                <div style={{ color: "#374151" }}>{user.email}</div>
+              </div>
+
+              <div className="mb-3">
+                <strong>Admin:</strong>
+                <div style={{ color: "#374151" }}>{user.isAdmin ? "Yes" : "No"}</div>
+              </div>
+
+              <div className="mb-3">
+                <strong>Tracked Items:</strong>
+                <div style={{ color: "#374151" }}>
+                  {user.trackedItems?.length ?? 0}
+                </div>
+              </div>
+
+              <div>
+                <strong>Alerts:</strong>
+                <div style={{ color: "#374151" }}>
+                  {user.alerts?.length ?? 0}
+                </div>
+              </div>
             </Card.Body>
           </Card>
+        </Col>
 
-          <Card className="shadow-sm">
-            <Card.Header className="bg-primary text-light">
-              <h5>Edit Profile</h5>
+        {/* EDIT PROFILE — SAME STYLE AS OVERVIEW */}
+        <Col md={6}>
+          <Card
+            className="shadow-lg"
+            style={{
+              borderRadius: "18px",
+              border: "1px solid #ececec",
+              overflow: "hidden",
+            }}
+          >
+            <Card.Header
+              className="text-light"
+              style={{
+                background: "#1e293b",  // SAME DARK HEADER
+                padding: "18px",
+                fontSize: "18px",
+                fontWeight: 600,
+              }}
+            >
+              Edit Profile
             </Card.Header>
-            <Card.Body>
+
+            <Card.Body style={{ padding: "22px" }}>
               {error && <Alert variant="danger">{error}</Alert>}
               {success && <Alert variant="success">{success}</Alert>}
 
               <Form onSubmit={handleUpdate}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Change Name</Form.Label>
+                  <Form.Label style={{ fontWeight: 500 }}>Change Name</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="Enter new name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    style={{
+                      padding: "12px",
+                      borderRadius: "12px",
+                      border: "1px solid #d1d5db",
+                    }}
                   />
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>New Password</Form.Label>
+                  <Form.Label style={{ fontWeight: 500 }}>New Password</Form.Label>
                   <Form.Control
                     type="password"
                     placeholder="Enter new password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    style={{
+                      padding: "12px",
+                      borderRadius: "12px",
+                      border: "1px solid #d1d5db",
+                    }}
                   />
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Confirm Password</Form.Label>
+                  <Form.Label style={{ fontWeight: 500 }}>Confirm Password</Form.Label>
                   <Form.Control
                     type="password"
                     placeholder="Confirm new password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    style={{
+                      padding: "12px",
+                      borderRadius: "12px",
+                      border: "1px solid #d1d5db",
+                    }}
                   />
                 </Form.Group>
 
-                <Button type="submit" className="w-100" disabled={updating}>
-                  {updating ? "Saving..." : "Update Profile"}
+                <Button
+                  type="submit"
+                  disabled={updating}
+                  className="w-100"
+                  style={{
+                    padding: "12px 0",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    borderRadius: "12px",
+                    background: "#1e293b",
+                    border: "none",
+                  }}
+                >
+                  {updating ? "Saving…" : "Update Profile"}
                 </Button>
               </Form>
             </Card.Body>

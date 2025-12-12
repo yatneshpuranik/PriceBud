@@ -23,14 +23,14 @@ const TrackedScreen = () => {
     loadTracked();
   }, []);
 
-  // DELETE ONE
+  // DELETE ONE ITEM
   const removeItem = async (trackId) => {
     const item = items.find((i) => i.trackId === trackId);
 
     setDeletedItem(item);
     setShowUndo(true);
 
-    // UI Remove Animation
+    // Remove in UI (smooth animation)
     setItems((prev) =>
       prev.filter((i) => i.trackId !== trackId).map((i) => ({
         ...i,
@@ -38,15 +38,16 @@ const TrackedScreen = () => {
       }))
     );
 
-    // Send delete to backend after short delay
+    // Wait before backend delete (allow undo)
     setTimeout(async () => {
-      if (showUndo) return; // user clicked Undo
+      if (showUndo) return;
       await axios.delete(`/api/tracked/${trackId}`, {
         withCredentials: true,
       });
     }, 1200);
   };
 
+  // UNDO
   const undoDelete = () => {
     if (!deletedItem) return;
     setItems((prev) => [deletedItem, ...prev]);
@@ -61,24 +62,37 @@ const TrackedScreen = () => {
   };
 
   return (
-    <Container className="py-3">
-      {/* HEADER ROW */}
+    <Container className="py-4" style={{ maxWidth: "900px" }}>
+      
+      {/* HEADER */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "20px",
+          marginBottom: "25px",
         }}
       >
-        <h2 style={{ fontWeight: 700 }}>Recently Viewed</h2>
+        <h2
+          style={{
+            fontWeight: 700,
+            fontSize: "28px",
+            letterSpacing: "-0.5px",
+          }}
+        >
+          Recently Viewed
+        </h2>
 
         {items.length > 0 && (
           <Button
             variant="outline-danger"
             size="sm"
             onClick={clearAll}
-            style={{ borderRadius: "6px" }}
+            style={{
+              borderRadius: "8px",
+              padding: "6px 14px",
+              fontWeight: 600,
+            }}
           >
             Clear All
           </Button>
@@ -87,7 +101,19 @@ const TrackedScreen = () => {
 
       {/* EMPTY STATE */}
       {items.length === 0 ? (
-        <p className="text-muted">Nothing viewed yet.</p>
+        <div
+          style={{
+            padding: "40px",
+            borderRadius: "14px",
+            border: "1px dashed #d1d5db",
+            background: "#fafafa",
+            textAlign: "center",
+            color: "#6b7280",
+            fontSize: "16px",
+          }}
+        >
+          No recently viewed products.
+        </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "26px" }}>
           {items.map((p) => (
@@ -96,11 +122,11 @@ const TrackedScreen = () => {
               style={{
                 position: "relative",
                 transition: "transform 0.3s ease, opacity 0.3s ease",
-                transform: p._deleted ? "translateX(-80px)" : "translateX(0)",
+                transform: p._deleted ? "translateX(-80px)" : "translateY(0)",
                 opacity: p._deleted ? 0 : 1,
               }}
             >
-              {/* DELETE BUTTON FOR DESKTOP */}
+              {/* DELETE BUTTON */}
               <Button
                 onClick={() => removeItem(p.trackId)}
                 style={{
@@ -108,23 +134,23 @@ const TrackedScreen = () => {
                   top: "-10px",
                   right: "-10px",
                   zIndex: 20,
-                  background: "white",
-                  color: "red",
-                  border: "1px solid #ccc",
+                  background: "#ffffff",
+                  color: "#dc2626",
+                  border: "1px solid #e5e7eb",
                   borderRadius: "50%",
-                  width: "32px",
-                  height: "32px",
-                  fontSize: "16px",
+                  width: "34px",
+                  height: "34px",
+                  fontSize: "18px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  cursor: "pointer",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
                 }}
               >
                 ×
               </Button>
 
-              {/* SWIPE TO REMOVE (MOBILE) */}
+              {/* SWIPE REMOVE (MOBILE) */}
               <div
                 draggable
                 onDragEnd={(e) => {
@@ -132,11 +158,30 @@ const TrackedScreen = () => {
                 }}
                 style={{ touchAction: "pan-x" }}
               >
-                <Product product={p} />
+                <div
+                  style={{
+                    transition: "0.25s ease",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.transform = "translateY(-3px)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.transform = "translateY(0)")
+                  }
+                >
+                  <Product product={p} />
+                </div>
               </div>
 
-              {/* VIEWED TIME */}
-              <small style={{ color: "gray", marginTop: "6px", display: "block" }}>
+              {/* Viewed Timestamp */}
+              <small
+                style={{
+                  color: "#6b7280",
+                  marginTop: "6px",
+                  display: "block",
+                  fontSize: "13px",
+                }}
+              >
                 Viewed: {new Date(p.viewedAt).toLocaleString()}
               </small>
             </div>
@@ -152,15 +197,17 @@ const TrackedScreen = () => {
             bottom: "20px",
             left: "50%",
             transform: "translateX(-50%)",
-            background: "#333",
+            background: "#1f2937",
             color: "white",
-            padding: "12px 20px",
-            borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+            padding: "12px 22px",
+            borderRadius: "10px",
+            boxShadow: "0 6px 16px rgba(0,0,0,0.3)",
             zIndex: 5000,
             display: "flex",
             alignItems: "center",
-            gap: "12px",
+            gap: "14px",
+            fontSize: "14px",
+            animation: "fadeIn 0.3s ease",
           }}
         >
           <span>Item removed</span>
@@ -169,7 +216,7 @@ const TrackedScreen = () => {
             style={{
               background: "transparent",
               border: "none",
-              color: "#4FC3F7",
+              color: "#60a5fa",
               fontWeight: 700,
               cursor: "pointer",
             }}

@@ -14,14 +14,12 @@ import {
   predictNextDrop,
 } from "../utils/ml";
 
-// Platform Logos
 const PLATFORM_LOGOS = {
   amazon: "/images/amazon.jpg",
   flipkart: "/images/flipkart.jpg",
   myntra: "/images/myntra.webp",
 };
 
-// Currency formatter
 const formatCurrency = (v) =>
   v == null
     ? "-"
@@ -37,11 +35,9 @@ const ProductScreen = () => {
   const [platforms, setPlatforms] = useState([]);
   const [bestDeal, setBestDeal] = useState(null);
   const [prediction, setPrediction] = useState(null);
-  const [autoAlertCreated, setAutoAlertCreated] = useState(false); // 🔔 auto-alert status
+  const [autoAlertCreated, setAutoAlertCreated] = useState(false);
 
-  // ------------------------------------------------------------------
-  // 🟩 AUTO-TRACK PRODUCT WHEN USER OPENS THE SCREEN
-  // ------------------------------------------------------------------
+  // Auto track product
   useEffect(() => {
     if (!productId) return;
     axios
@@ -50,14 +46,10 @@ const ProductScreen = () => {
         { productId },
         { withCredentials: true }
       )
-      .catch(() => {
-        // ignore if user not logged in
-      });
+      .catch(() => {});
   }, [productId]);
 
-  // ------------------------------------------------------------------
-  // PROCESS PLATFORM DATA (stats + best deal)
-  // ------------------------------------------------------------------
+  // PROCESS PLATFORM PRICES
   useEffect(() => {
     if (!product || !product.platforms) return;
 
@@ -68,7 +60,6 @@ const ProductScreen = () => {
       const latest = p.currentPrice;
       const highest = prices.length ? Math.max(...prices) : latest;
       const lowest = prices.length ? Math.min(...prices) : latest;
-
       const avg =
         prices.length > 0
           ? prices.reduce((a, b) => a + b, 0) / prices.length
@@ -100,9 +91,7 @@ const ProductScreen = () => {
     }
   }, [product]);
 
-  // ------------------------------------------------------------------
-  // ML (browser) – TensorFlow.js CDN based prediction
-  // ------------------------------------------------------------------
+  // ML Prediction
   useEffect(() => {
     async function runML() {
       if (!product || !product.platforms) return;
@@ -124,54 +113,33 @@ const ProductScreen = () => {
     runML();
   }, [product]);
 
-  // ------------------------------------------------------------------
-  // 🔔 AUTO-CREATE ALERT WHEN DROP >= 20%
-  //
-  // Logic:
-  //  - Use current best platform dropPercent (historic)
-  //  - If dropPercent >= 20, automatically POST /api/alerts
-  //  - So Alerts screen shows it as a notification-style row
-  // ------------------------------------------------------------------
+  // Auto Alert Create
   useEffect(() => {
     if (!bestDeal || !productId) return;
-
     const drop = parseFloat(bestDeal.dropPercent);
-    if (isNaN(drop) || drop < 20) return; // only for 20%+ drops
-
-    if (autoAlertCreated) return; // already created for this view
+    if (drop < 20 || autoAlertCreated) return;
 
     let cancelled = false;
 
-    const createAutoAlert = async () => {
+    const createAlert = async () => {
       try {
         await axios.post(
           "/api/alerts",
           {
             productId,
-            // Alert price = current best deal price
             targetPrice: bestDeal.latest,
           },
           { withCredentials: true }
         );
-        if (!cancelled) {
-          setAutoAlertCreated(true);
-        }
-      } catch (err) {
-        // silently ignore if not logged in or API error
-        console.log("Auto alert create error:", err?.response?.data || err);
-      }
+        if (!cancelled) setAutoAlertCreated(true);
+      } catch {}
     };
 
-    createAutoAlert();
-
-    return () => {
-      cancelled = true;
-    };
+    createAlert();
+    return () => (cancelled = true);
   }, [bestDeal, productId, autoAlertCreated]);
 
-  // ------------------------------------------------------------------
-  // LOADING + ERROR
-  // ------------------------------------------------------------------
+  // LOADING / ERROR
   if (isLoading) return <Loader />;
   if (error)
     return (
@@ -179,210 +147,145 @@ const ProductScreen = () => {
         {error?.data?.message || error.error}
       </Message>
     );
-  if (!product)
-    return <h3 className="text-center py-5">Product not found</h3>;
+  if (!product) return <h3 className="text-center py-5">Product not found</h3>;
 
-  // ------------------------------------------------------------------
-  // UI STARTS HERE
-  // ------------------------------------------------------------------
+  // UI STARTS
   return (
-    <Container className="py-4">
+    <Container className="py-4" style={{ maxWidth: "1100px" }}>
       <Row className="gy-4">
-        {/* LEFT CARD */}
+        {/* LEFT PANEL (sticky) */}
         <Col lg={4}>
           <div
-            className="shadow-lg rounded-4 p-4 bg-white"
+            className="shadow-lg p-4 bg-white"
             style={{
               position: "sticky",
               top: "25px",
-              border: "1px solid #ececec",
               borderRadius: "20px",
+              border: "1px solid #ececec",
             }}
           >
-            {/* Product Image */}
+            {/* IMAGE */}
             <div
               style={{
-                borderRadius: "14px",
+                borderRadius: "16px",
                 overflow: "hidden",
-                background: "#f7f7f7",
+                background: "#f5f5f5",
+                padding: "10px",
               }}
             >
               <img
                 src={product.image}
                 alt={product.title}
                 className="img-fluid"
+                style={{ objectFit: "contain", width: "100%" }}
               />
             </div>
 
-            <h3 className="fw-bold mt-3">{product.title}</h3>
+            {/* TITLE */}
+            <h3
+              className="fw-bold mt-3"
+              style={{ lineHeight: "1.3", fontSize: "22px" }}
+            >
+              {product.title}
+            </h3>
 
             {/* BEST PRICE */}
             {bestDeal && (
               <h2
                 className="fw-bold mt-2"
-                style={{ color: "#3ABF4A", fontSize: "32px" }}
+                style={{ color: "#16a34a", fontSize: "32px" }}
               >
                 {formatCurrency(bestDeal.latest)}
               </h2>
             )}
 
-            {/* ML PREDICTION CARD — premium style */}
+            {/* ML PREDICTION CARD */}
             {prediction && (
               <div
-                className="ml-widget mt-3"
                 style={{
+                  marginTop: "20px",
+                  padding: "18px",
                   borderRadius: "16px",
-                  padding: "14px 16px",
                   background: "#0f172a",
                   color: "white",
-                  border: "1px solid rgba(148,163,184,0.4)",
-                  boxShadow: "0 10px 25px rgba(15,23,42,0.55)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  boxShadow: "0 12px 25px rgba(0,0,0,0.35)",
                 }}
               >
-                {/* ML HEADER */}
-                <div className="d-flex justify-content-between align-items-center mb-1">
-                  <span
-                    style={{
-                      fontSize: "13px",
-                      letterSpacing: "0.06em",
-                      textTransform: "uppercase",
-                      color: "#e2e8f0",
-                    }}
-                  >
-                    🔮 Price Prediction Engine
+                <div className="d-flex justify-content-between mb-1">
+                  <span style={{ opacity: 0.8, fontSize: "13px" }}>
+                    🔮 Prediction Engine
                   </span>
-                  <small style={{ opacity: 0.7, fontSize: "11px" }}>
-                    v1.0 · Beta
-                  </small>
+                  <small style={{ opacity: 0.6 }}>v1.0 · Beta</small>
                 </div>
 
                 {/* PRICE ROW */}
                 <div className="d-flex justify-content-between mt-2">
                   <div>
-                    <div
-                      style={{
-                        opacity: 0.75,
-                        fontSize: "12px",
-                        color: "#cbd5f5",
-                      }}
-                    >
+                    <div style={{ opacity: 0.7, fontSize: "12px" }}>
                       Current Best
                     </div>
                     <div
-                      style={{
-                        fontSize: "20px",
-                        fontWeight: 700,
-                        marginTop: 2,
-                      }}
+                      style={{ fontSize: "22px", fontWeight: 700 }}
                     >
                       ₹{prediction.currentMin.toFixed(0)}
                     </div>
                   </div>
 
                   <div style={{ textAlign: "right" }}>
-                    <div
-                      style={{
-                        opacity: 0.75,
-                        fontSize: "12px",
-                        color: "#cbd5f5",
-                      }}
-                    >
+                    <div style={{ opacity: 0.7, fontSize: "12px" }}>
                       Predicted Next Min
                     </div>
                     <div
-                      style={{
-                        fontSize: "20px",
-                        fontWeight: 700,
-                        marginTop: 2,
-                      }}
+                      style={{ fontSize: "22px", fontWeight: 700 }}
                     >
                       ₹{prediction.predictedMin.toFixed(0)}
                     </div>
                   </div>
                 </div>
 
-                {/* STATUS TAG */}
+                {/* STATUS */}
                 {prediction.willDrop ? (
                   <div
                     style={{
-                      marginTop: 10,
-                      padding: "6px 10px",
+                      marginTop: 12,
+                      padding: "6px 12px",
                       borderRadius: "999px",
+                      background: "rgba(255, 88, 88, 0.2)",
+                      border: "1px solid rgba(255, 88, 88, 0.35)",
                       fontSize: "12px",
-                      fontWeight: 500,
-                      background: "rgba(248, 113, 113, 0.12)",
-                      color: "#fecaca",
-                      border: "1px solid rgba(248,113,113,0.35)",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
+                      display: "inline-block",
                     }}
                   >
-                    <span>⚠️ Expected Drop Soon</span>
-                    <span
-                      style={{
-                        height: 4,
-                        width: 4,
-                        borderRadius: "999px",
-                        background: "#fecaca",
-                      }}
-                    />
-                    <span>Better wait</span>
+                    ⚠️ Expected drop soon — Better wait
                   </div>
                 ) : (
                   <div
                     style={{
-                      marginTop: 10,
-                      padding: "6px 10px",
+                      marginTop: 12,
+                      padding: "6px 12px",
                       borderRadius: "999px",
+                      background: "rgba(16, 185, 129, 0.15)",
+                      border: "1px solid rgba(16, 185, 129, 0.3)",
                       fontSize: "12px",
-                      fontWeight: 500,
-                      background: "rgba(52,211,153,0.12)",
-                      color: "#bbf7d0",
-                      border: "1px solid rgba(52,211,153,0.35)",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
+                      display: "inline-block",
                     }}
                   >
-                    <span>✅ Stable Price</span>
-                    <span
-                      style={{
-                        height: 4,
-                        width: 4,
-                        borderRadius: "999px",
-                        background: "#bbf7d0",
-                      }}
-                    />
-                    <span>Safe to buy now</span>
+                    ✅ Stable price — Safe to buy now
                   </div>
                 )}
 
-                {/* AUTO ALERT INFO */}
                 {autoAlertCreated && (
                   <div
                     style={{
                       marginTop: 8,
-                      fontSize: 11,
+                      fontSize: "11px",
                       color: "#a5b4fc",
                     }}
                   >
-                    🔔 Price drop alert saved — check your Alerts tab.
+                    🔔 Auto alert saved — check Alerts tab.
                   </div>
                 )}
-
-                {/* FOOTER TEXT */}
-                <div
-                  style={{
-                    marginTop: 8,
-                    fontSize: 11,
-                    opacity: 0.7,
-                    color: "#e5e7eb",
-                  }}
-                >
-                  Powered by <b>TensorFlow.js</b> · learns from your live price
-                  history.
-                </div>
               </div>
             )}
 
@@ -393,8 +296,8 @@ const ProductScreen = () => {
                 className="w-100 py-2 fw-semibold mt-4"
                 onClick={() => window.open(bestDeal.url, "_blank")}
                 style={{
+                  fontSize: "18px",
                   borderRadius: "12px",
-                  fontSize: "17px",
                   boxShadow: "0 6px 14px rgba(0,0,0,0.12)",
                 }}
               >
@@ -404,27 +307,32 @@ const ProductScreen = () => {
           </div>
         </Col>
 
-        {/* RIGHT SIDE — PLATFORM ANALYSIS */}
+        {/* RIGHT SIDE — PLATFORM CARDS */}
         <Col lg={8}>
           {platforms.map((p, idx) => (
             <div
               key={idx}
-              className="shadow rounded-4 p-4 mb-4 bg-white"
+              className="shadow p-
+4 mb-4"
               style={{
-                border: "1px solid #ececec",
                 borderRadius: "18px",
+                background: "#ffffff",
+                border: "1px solid #ececec",
               }}
             >
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                {/* Logo + Name */}
+              {/* HEADER */}
+              <div
+                className="d-flex justify-content-between align-items-center mb-3"
+              >
                 <div className="d-flex align-items-center gap-2">
                   <img
                     src={PLATFORM_LOGOS[p.name.toLowerCase()]}
                     alt={p.name}
                     style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "6px",
+                      width: "34px",
+                      height: "34px",
+                      borderRadius: "8px",
+                      objectFit: "cover",
                     }}
                   />
                   <h5 className="fw-bold text-capitalize m-0">{p.name}</h5>
@@ -434,8 +342,8 @@ const ProductScreen = () => {
                   className="btn-sm"
                   variant="outline-primary"
                   style={{
+                    padding: "6px 16px",
                     borderRadius: "10px",
-                    padding: "6px 14px",
                   }}
                   onClick={() => window.open(p.url, "_blank")}
                 >
@@ -443,8 +351,8 @@ const ProductScreen = () => {
                 </Button>
               </div>
 
-              {/* Chart */}
-              <div style={{ height: "260px" }}>
+              {/* CHART */}
+              <div style={{ height: "270px" }}>
                 <PriceChartLarge data={p.chartData} />
               </div>
             </div>

@@ -1,124 +1,172 @@
-import { useState  , useEffect} from 'react';
-import { Link , useNavigate , useLocation } from 'react-router-dom';
-import { Form , Row , Button , Col }  from 'react-bootstrap';
-import FormContainer from '../component/FormContainer';
-import Loader from '../component/Loader';
-import { useRegisterMutation } from '../slices/userApiSlice';
-import { setCredentials } from '../slices/authSlice';
-import { useDispatch , useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Form, Row, Button, Col, Card } from "react-bootstrap";
+import Loader from "../component/Loader";
+import { useRegisterMutation } from "../slices/userApiSlice";
+import { setCredentials } from "../slices/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 
 const RegisterScreen = () => {
- const [ name , setName] = useState('');
- const [ email , setEmail] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
 
- const [password , setPassword ] = useState ('');
- const [ confirmPassword , setConfirmPassword] = useState('');
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
- const dispatch = useDispatch();
- const navigate =  useNavigate();
+  const [register, { isLoading }] = useRegisterMutation();
 
- const [ register , {isLoading} ] =useRegisterMutation();
+  const { userInfo } = useSelector((state) => state.auth);
 
- const { userInfo } = useSelector( (state) => state.auth );
+  const { search } = useLocation();
+  const sp = new URLSearchParams(search);
+  const redirect = sp.get("redirect") || "/profile";
 
-const { search } = useLocation ();
-const sp =  new URLSearchParams (search);
-const redirect =  sp.get('redirect') || '/profile';
+  useEffect(() => {
+    if (userInfo) navigate(redirect);
+  }, [userInfo, redirect, navigate]);
 
-
-useEffect(()=>{
-  if(userInfo)
-  {
-       navigate(redirect);
-  }
-} , [userInfo , redirect ,navigate ]);
-
-
-
-
-  const submitHandler =  async (e) =>
-  {
+  const submitHandler = async (e) => {
     e.preventDefault();
 
-    if ( password !== confirmPassword ) {
-      toast.error('Password Do Not Match ');
-      return ; 
-      
-    }else{
-         try {
-       const res = await register ( { name , email , password }).unwrap();
-       dispatch(setCredentials({...res,}));
-       navigate(redirect);
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    try {
+      const res = await register({ name, email, password }).unwrap();
+      dispatch(setCredentials({ ...res }));
+      navigate(redirect);
     } catch (err) {
-      toast.error( err?.data?.message || err.error );
+      toast.error(err?.data?.message || err.error);
     }
-    }
-  }
+  };
 
   return (
-    <FormContainer>
-       <h1> Sign Up </h1>
-       <Form onSubmit={submitHandler}>
-        <Form.Group controlId='name' className='my-3'>
-            <Form.Label>Name</Form.Label>
+    <div
+      style={{
+        maxWidth: "450px",
+        margin: "0 auto",
+        padding: "40px 20px",
+      }}
+    >
+      <Card
+        className="shadow-lg"
+        style={{
+          borderRadius: "18px",
+          border: "1px solid #e5e7eb",
+          padding: "28px",
+          boxShadow: "0 8px 22px rgba(0,0,0,0.08)",
+        }}
+      >
+        <h2
+          className="text-center mb-4"
+          style={{ fontWeight: 700, letterSpacing: "-0.5px" }}
+        >
+          Create Account
+        </h2>
+
+        <Form onSubmit={submitHandler}>
+          <Form.Group controlId="name" className="mb-3">
+            <Form.Label style={{ fontWeight: 500 }}>Full Name</Form.Label>
             <Form.Control
-            type='text'
-            placeholder='Enter Name'
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            >
+              type="text"
+              placeholder="Enter Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={{
+                padding: "12px",
+                borderRadius: "10px",
+                border: "1px solid #d1d5db",
+              }}
+            />
+          </Form.Group>
 
-            </Form.Control>
-
-        </Form.Group>
-        <Form.Group controlId='email' className='my-3'>
-            <Form.Label> Email Address</Form.Label>
+          <Form.Group controlId="email" className="mb-3">
+            <Form.Label style={{ fontWeight: 500 }}>Email Address</Form.Label>
             <Form.Control
-            type='email'
-            placeholder='Enter Email'
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            >
+              type="email"
+              placeholder="Enter Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={{
+                padding: "12px",
+                borderRadius: "10px",
+                border: "1px solid #d1d5db",
+              }}
+            />
+          </Form.Group>
 
-            </Form.Control>
-
-        </Form.Group>
-        <Form.Group controlId='password' className='my-3'>
-            <Form.Label> Password</Form.Label>
+          <Form.Group controlId="password" className="mb-3">
+            <Form.Label style={{ fontWeight: 500 }}>Password</Form.Label>
             <Form.Control
-            type='password'
-            placeholder='Enter Password'
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            >
-                
-            </Form.Control>
+              type="password"
+              placeholder="Create Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{
+                padding: "12px",
+                borderRadius: "10px",
+                border: "1px solid #d1d5db",
+              }}
+            />
+          </Form.Group>
 
-        </Form.Group>
-            <Form.Group controlId='confirmPassword' className='my-3'>
-            <Form.Label> ConfirmPassword</Form.Label>
+          <Form.Group controlId="confirmPassword" className="mb-3">
+            <Form.Label style={{ fontWeight: 500 }}>Confirm Password</Form.Label>
             <Form.Control
-            type='password'
-            placeholder='Enter Password Again'
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+              type="password"
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              style={{
+                padding: "12px",
+                borderRadius: "10px",
+                border: "1px solid #d1d5db",
+              }}
+            />
+          </Form.Group>
+
+          <Button
+            type="submit"
+            variant="primary"
+            className="w-100 mt-3"
+            style={{
+              padding: "10px 0",
+              fontSize: "16px",
+              fontWeight: 600,
+              borderRadius: "12px",
+              boxShadow: "0 6px 14px rgba(0,0,0,0.12)",
+            }}
+          >
+            Register
+          </Button>
+
+          {isLoading && (
+            <div className="mt-3 text-center">
+              <Loader />
+            </div>
+          )}
+        </Form>
+
+        <Row className="py-3 text-center">
+          <Col>
+            Already have an account?{" "}
+            <Link
+              to={redirect ? `/login?redirect=${redirect}` : "/login"}
+              style={{ fontWeight: 600 }}
             >
-                
-            </Form.Control>
+              Login
+            </Link>
+          </Col>
+        </Row>
+      </Card>
+    </div>
+  );
+};
 
-        </Form.Group>
-        <Button type='submit'  variant='primary' className='mt-2' > Register </Button>
-        { isLoading && <Loader/> }
-       </Form>
-       <Row className='py-3'>
-        <Col>
-        Already Have An Account ? < Link to= { redirect ? `/login?redirect=${redirect}` : '/login'}>Login</Link>
-        </Col>
-       </Row>
-    </FormContainer>
-  )
-}
-
-export default RegisterScreen ; 
+export default RegisterScreen;
