@@ -15,7 +15,7 @@ const AlertScreen = () => {
       setAlerts(data);
       setLoading(false);
     } catch (err) {
-      setError("Failed to load alerts");
+      setError("Login Required ");
       setLoading(false);
     }
   };
